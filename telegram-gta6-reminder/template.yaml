@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Daily GTA 6 countdown reminder sent to Telegram.
+  Lambda (Python 3.12) triggered by an EventBridge schedule rule.
+
+Parameters:
+  TelegramToken:
+    Type: String
+    NoEcho: true
+    Description: Telegram bot token from @BotFather (passed from GitHub Secrets).
+  ChatId:
+    Type: String
+    Description: Telegram chat/group id to send the message to.
+  ScheduleExpression:
+    Type: String
+    Default: cron(0 3 * * ? *)
+    Description: EventBridge cron/rate expression in UTC. Default = 03:00 UTC = 21:00 Mexico City.
+  ScheduleEnabled:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Set to "false" to pause the reminder without deleting anything.
+
+Conditions:
+  IsScheduleEnabled: !Equals [!Ref ScheduleEnabled, "true"]
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    MemorySize: 128
+    Timeout: 10
+
+Resources:
+  ReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: telegram-gta6-reminder
+      Description: Sends the daily GTA 6 countdown to Telegram.
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          TELEGRAM_TOKEN: !Ref TelegramToken
+          CHAT_ID: !Ref ChatId
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Name: telegram-gta6-daily
+            Description: Daily trigger for the GTA 6 Telegram reminder.
+            Schedule: !Ref ScheduleExpression
+            Enabled: !If [IsScheduleEnabled, true, false]
+
+  ReminderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ReminderFunction}
+      RetentionInDays: 14
+
+Outputs:
+  FunctionArn:
+    Description: ARN of the reminder Lambda.
+    Value: !GetAtt ReminderFunction.Arn
+  ScheduleRuleName:
+    Description: EventBridge rule that triggers the Lambda.
+    Value: telegram-gta6-daily

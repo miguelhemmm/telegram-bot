@@ -1,0 +1,79 @@
+name: Deploy telegram-gta6-reminder
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "telegram-gta6-reminder/**"
+      - ".github/workflows/deploy-telegram-reminder.yml"
+  workflow_dispatch:
+
+# Required for OIDC: the job requests a short-lived token from GitHub
+# and exchanges it for AWS credentials (no access keys stored anywhere).
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-telegram-gta6-reminder
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+
+defaults:
+  run:
+    working-directory: telegram-gta6-reminder
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test deps
+        run: pip install pytest
+
+      - name: Run pytest
+        run: pytest -q
+
+  deploy:
+    name: SAM deploy
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate template
+        run: sam validate --lint
+
+      - name: Build
+        run: sam build
+
+      - name: Deploy
+        run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              TelegramToken="${{ secrets.TELEGRAM_TOKEN }}" \
+              ChatId="${{ secrets.CHAT_ID }}"
