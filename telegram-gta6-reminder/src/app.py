@@ -11,6 +11,7 @@ import os
 import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
+from quotes import random_quote
 
 RELEASE_DATE = date(2026, 11, 19)
 
@@ -20,7 +21,7 @@ MX_TZ = timezone(timedelta(hours=-6), name="America/Mexico_City")
 
 
 def build_message(today: date) -> str:
-    """Pure function: countdown text for a given date (easy to unit test)."""
+    """Countdown headline for a given date + a random quote (quotes.py)."""
     days_left = (RELEASE_DATE - today).days
 
     if days_left > 1:
@@ -32,7 +33,7 @@ def build_message(today: date) -> str:
     else:
         headline = f"🎮 GTA 6 salió hace {abs(days_left)} días. ¿Ya lo jugaste? 🚔"
 
-    return f"{headline}\n\n📅 {today.strftime('%d/%m/%Y')}"
+    return f"{headline}\n\n{random_quote()}"
 
 
 def _require_env(name: str) -> str:

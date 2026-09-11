@@ -12,7 +12,13 @@ import app  # noqa: E402
 def test_many_days_left():
     msg = app.build_message(date(2026, 11, 9))
     assert "Faltan 10 días" in msg
-    assert "09/11/2026" in msg
+
+
+def test_message_has_headline_and_quote():
+    headline, quote = app.build_message(date(2026, 11, 9)).split("\n\n", 1)
+    assert headline.startswith("🎮")
+    assert quote.strip()
+    assert any(q[0] in quote for q in app.random_quote.__globals__["QUOTES"])
 
 
 def test_one_day_left():
