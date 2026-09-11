@@ -55,6 +55,10 @@ Resources:
 
   ReminderLogGroup:
     Type: AWS::Logs::LogGroup
+    # Explicit so cfn-lint (I3011) stops asking. Delete = logs go away with the
+    # stack; Retain would leave an orphan log group that breaks the next create.
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       LogGroupName: !Sub /aws/lambda/${ReminderFunction}
       RetentionInDays: 14
