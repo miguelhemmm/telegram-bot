@@ -51,7 +51,13 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepoName}:ref:refs/heads/${Branch}
+                token.actions.githubusercontent.com:sub:
+                  # Classic form.
+                  - !Sub repo:${GitHubOrg}/${RepoName}:ref:refs/heads/${Branch}
+                  # Newer GitHub form embeds numeric ids: repo:owner@123/name@456:ref:...
+                  # '@' is not a valid character in GitHub names, so the wildcard
+                  # cannot match a different owner or repo.
+                  - !Sub repo:${GitHubOrg}@*/${RepoName}@*:ref:refs/heads/${Branch}
       Policies:
         - PolicyName: sam-deploy
           PolicyDocument:
