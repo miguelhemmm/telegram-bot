@@ -59,6 +59,13 @@ Resources:
     # stack; Retain would leave an orphan log group that breaks the next create.
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
+    Metadata:
+      guard:
+        SuppressedRules:
+          # Logs are already encrypted at rest with the AWS-managed key.
+          # A customer-managed KMS key (~$1/month) is not worth it for a
+          # countdown bot that logs nothing sensitive.
+          - CLOUDWATCH_LOG_GROUP_ENCRYPTED
     Properties:
       LogGroupName: !Sub /aws/lambda/${ReminderFunction}
       RetentionInDays: 14
