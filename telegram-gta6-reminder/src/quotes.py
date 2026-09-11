@@ -93,4 +93,4 @@ def random_quote(first: bool = True) -> str:
     pool = [q for q in QUOTES if q != _last] or QUOTES
     _last = random.choice(pool)
     text, author = _last
-    return (INTRO if first else FOLLOW_UP).format(author=author, text=text)
+    return _last.format(author=author, text=text)
