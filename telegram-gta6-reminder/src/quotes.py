@@ -1,8 +1,6 @@
-"""Loading-screen quotes: spoken while waiting for a slow model reply.
+"""Random philosophy quotes appended to the daily Telegram message.
 
-Edit QUOTES freely: (text, author). Keep them short; they're read aloud.
-Used by __init__._handle(): after THINK_QUOTE_DELAY_S of thinking it speaks one,
-unless the reply already arrived.
+Edit QUOTES freely: (text, author). Used by app.build_message().
 """
 
 from __future__ import annotations
@@ -77,20 +75,10 @@ QUOTES: list[tuple[str, str]] = [
 _last: tuple[str, str] | None = None
 
 
-# How quotes are phrased. The first one in a waiting period gets the intro,
-# every following one is chained with FOLLOW_UP.
-INTRO = "En lo que estoy pensando, déjame hablarte sobre la vez que {author} dijo: {text}."
-FOLLOW_UP = "O cuando {author} dijo: {text}."
-
-
-def random_quote(first: bool = True) -> str:
-    """A spoken-ready quote, never the same one twice in a row.
-
-    Args:
-        first: True for the first quote of a wait (uses INTRO), False after (FOLLOW_UP).
-    """
+def random_quote() -> str:
+    """A formatted quote («text» — author), never the same one twice in a row."""
     global _last
     pool = [q for q in QUOTES if q != _last] or QUOTES
     _last = random.choice(pool)
     text, author = _last
-    return _last.format(author=author, text=text)
+    return f"«{text}» — {author}"
