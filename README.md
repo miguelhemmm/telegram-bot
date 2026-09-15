@@ -3,8 +3,8 @@
 Practice repo for AWS. Each project lives in its own folder with its own SAM template
 and deploys automatically from GitHub Actions.
 
-| Project | What it does | Deploy trigger |
-|---|---|---|
+| Project                                             | What it does                                                                            | Deploy trigger                      |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------- |
 | [`telegram-gta6-reminder/`](telegram-gta6-reminder) | Lambda that sends a daily GTA 6 countdown to Telegram, fired by an EventBridge schedule | push to `main` touching that folder |
 
 ## Architecture
@@ -29,7 +29,7 @@ OIDC token for AWS credentials by assuming the deploy role.
 All commands use the personal account profile:
 
 ```bash
-export AWS_PROFILE=aws-kvothe
+export AWS_PROFILE=<AWS-PROFILE>
 ```
 
 ### 1. Bootstrap the OIDC provider + deploy role
@@ -47,11 +47,11 @@ aws cloudformation describe-stacks --stack-name github-oidc \
 
 ### 2. GitHub secrets
 
-| Secret | Value |
-|---|---|
+| Secret                | Value                        |
+| --------------------- | ---------------------------- |
 | `AWS_DEPLOY_ROLE_ARN` | `RoleArn` output from step 1 |
-| `TELEGRAM_TOKEN` | bot token from @BotFather |
-| `CHAT_ID` | Telegram chat / group id |
+| `TELEGRAM_TOKEN`      | bot token from @BotFather    |
+| `CHAT_ID`             | Telegram chat / group id     |
 
 ```bash
 gh secret set AWS_DEPLOY_ROLE_ARN --body "arn:aws:iam::<ACCOUNT>:role/github-actions-deploy"

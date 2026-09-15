@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: 2010-09-09
 Description: >
   One-time bootstrap: GitHub Actions OIDC provider + deploy role.
   Lets a specific GitHub repo/branch assume a role in this account
