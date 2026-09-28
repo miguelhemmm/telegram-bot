@@ -70,15 +70,15 @@ Two independent loops share the picture:
 
 ### Repository layout
 
-| Path | Role |
-|---|---|
-| `telegram-gta6-reminder/template.yaml` | SAM template. Declares the Lambda, its schedule, its log group. This is the source of truth for what exists in AWS. |
-| `telegram-gta6-reminder/samconfig.toml` | Default flags for the SAM CLI (stack name, region, artifact bucket). Keeps the workflow command short. Contains no secrets. |
-| `telegram-gta6-reminder/src/app.py` | Lambda handler. Builds the countdown message and calls the Telegram API. |
-| `telegram-gta6-reminder/src/quotes.py` | Quote list and `random_quote()` helper appended to each message. |
-| `telegram-gta6-reminder/tests/test_app.py` | pytest unit tests. Pure logic only, no network. |
-| `infra/github-oidc.yaml` | One-time bootstrap CloudFormation template: OIDC identity provider + the IAM role GitHub Actions assumes. Deployed manually once, not by the pipeline. |
-| `.github/workflows/deploy-telegram-reminder.yml` | The CI/CD pipeline. |
+| Path                                             | Role                                                                                                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `telegram-gta6-reminder/template.yaml`           | SAM template. Declares the Lambda, its schedule, its log group. This is the source of truth for what exists in AWS.                                    |
+| `telegram-gta6-reminder/samconfig.toml`          | Default flags for the SAM CLI (stack name, region, artifact bucket). Keeps the workflow command short. Contains no secrets.                            |
+| `telegram-gta6-reminder/src/app.py`              | Lambda handler. Builds the countdown message and calls the Telegram API.                                                                               |
+| `telegram-gta6-reminder/src/quotes.py`           | Quote list and `random_quote()` helper appended to each message.                                                                                       |
+| `telegram-gta6-reminder/tests/test_app.py`       | pytest unit tests. Pure logic only, no network.                                                                                                        |
+| `infra/github-oidc.yaml`                         | One-time bootstrap CloudFormation template: OIDC identity provider + the IAM role GitHub Actions assumes. Deployed manually once, not by the pipeline. |
+| `.github/workflows/deploy-telegram-reminder.yml` | The CI/CD pipeline.                                                                                                                                    |
 
 ### `template.yaml` (AWS SAM)
 
@@ -117,8 +117,7 @@ CloudFormation resources before deploying.
   variables (raises a clear error if missing), POSTs JSON to
   `https://api.telegram.org/bot<token>/sendMessage` with the standard library
   `urllib`, and **re-raises** on HTTP errors. Raising matters: a failed
-  invocation shows up as an error in CloudWatch metrics instead of a silent
-  200.
+  invocation shows up as an error in CloudWatch metrics instead of a silent 200.
 - `lambda_handler(event, context)` is the entry point EventBridge calls. It
   computes "today" in Mexico City time (fixed UTC-6, no DST since 2022) and
   glues the two functions together.
@@ -271,3 +270,89 @@ branch-per-environment trust condition.
 
 Well inside the free tier: ~30 invocations/month × 0.7 s × 128 MB,
 one EventBridge rule, a few KB of logs. Effectively $0.
+
+## Glossary
+
+- **Serverless** — You deploy code, not servers. AWS provisions the compute on
+  demand, scales it, patches it, and bills per invocation and millisecond. When
+  nothing runs, nothing costs. In this project the Lambda exists only for the
+  ~0.7 s it takes to send the daily message.
+
+- **Infrastructure-as-code (IaC)** — Cloud resources (functions, schedules, roles,
+  log groups) are declared in versioned text files instead of clicked together
+  in a console. The file is the source of truth: reviewable in a PR, diffable,
+  reproducible in another account. Here that file is `template.yaml`.
+
+- **Keyless CI/CD** — The pipeline authenticates to AWS without any stored
+  access key or secret key. It proves its identity with a short-lived signed
+  token and receives temporary credentials that expire within the hour. Nothing
+  long-lived exists to leak or rotate.
+
+- **GitHub OIDC** — OpenID Connect is a standard for one system to vouch for an
+  identity to another with a signed JWT. GitHub Actions can mint a JWT that says
+  "this run belongs to repo X, branch Y, commit Z". AWS is configured to trust
+  GitHub's signing keys and checks those claims before handing out credentials.
+
+- **STS (Security Token Service)** — The AWS service that issues temporary
+  credentials. `AssumeRoleWithWebIdentity` is the STS call that takes an OIDC
+  token, validates it against the registered identity provider and the role's
+  trust policy, and returns an access key + secret + session token valid for a
+  limited time.
+
+- **CloudFormation** — AWS's native IaC engine. You submit a template describing
+  resources; CloudFormation computes the difference from what already exists (a
+  *changeset*) and creates, updates, or deletes resources to match, rolling back
+  on failure. A *stack* is one deployed template and the group of resources it
+  owns.
+
+- **Lambda** — AWS's function-as-a-service. You upload code plus a handler name;
+  Lambda runs it in response to an event (here, an EventBridge schedule) inside
+  a managed runtime (Python 3.12 on arm64). You configure memory and timeout;
+  AWS handles everything else.
+
+- **EventBridge** — AWS's event bus and scheduler. A *rule* matches events or
+  fires on a cron/rate expression and routes to a *target*. This project uses a
+  cron rule (`cron(0 3 * * ? *)`, UTC) whose target is the Lambda.
+
+- **SAM template** — A CloudFormation template that starts with
+  `Transform: AWS::Serverless-2016-10-31` and may use SAM shorthand resources
+  such as `AWS::Serverless::Function`. CloudFormation expands the shorthand into
+  standard resources (function, execution role, EventBridge rule, invoke
+  permission) before deploying.
+
+- **SAM CLI** — The `sam` command-line tool. `sam build` packages the code,
+  `sam validate` lints the template, `sam deploy` uploads the artifact and
+  drives CloudFormation, `sam logs` and `sam local invoke` help with debugging.
+  `samconfig.toml` holds its default flags.
+
+- **Artifact** — The built, deployable output of the code: for a Lambda, a zip
+  file containing `app.py`, `quotes.py`, and any dependencies. `sam build`
+  produces it under `.aws-sam/build/`.
+
+- **Artifact bucket** — The S3 bucket where `sam deploy` uploads the artifact so
+  CloudFormation can fetch it when creating or updating the function. With
+  `--resolve-s3`, SAM creates and manages a bucket named
+  `aws-sam-cli-managed-default-*` automatically.
+
+- **IAM (Identity and Access Management)** — AWS's permission system. Three
+  pieces appear in this project: an *identity provider* (trusts GitHub), a
+  *role* (an identity that can be assumed, with a *trust policy* saying who may
+  assume it and a *permissions policy* saying what it may do), and the Lambda
+  *execution role* (what the function itself is allowed to call: only writing
+  logs).
+
+- **GitHub Actions** — GitHub's CI/CD service. A *workflow* YAML file in
+  `.github/workflows/` declares triggers (push, manual), *jobs* that run on a
+  fresh virtual machine, and *steps* inside each job. Reusable steps from the
+  marketplace (`actions/checkout`, `aws-actions/configure-aws-credentials`) are
+  called *actions*.
+
+- **CloudWatch** — AWS's monitoring service. *CloudWatch Logs* stores whatever
+  the Lambda prints, in a *log group* per function with a configurable
+  retention. *CloudWatch Metrics* tracks invocations, errors, and duration, and
+  can drive alarms.
+
+- **CloudTrail** — AWS's audit log. Every API call in the account (who, what,
+  when, from where, success or error) is recorded. It is how the OIDC failure
+  was diagnosed: the rejected `AssumeRoleWithWebIdentity` events showed the exact
+  `sub` claim GitHub was sending.
