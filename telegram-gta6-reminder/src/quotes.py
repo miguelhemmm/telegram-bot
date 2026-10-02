@@ -9,6 +9,7 @@ import random
 
 QUOTES: list[tuple[str, str]] = [
     ("Solo sé que no sé nada, y el saber que nada sé me hace más sabio que quienes creen saberlo todo", "Sócrates"),
+    ("Si pedimos el éxito preparándonos para el fracaso, sólo obtendremos aquello para lo cual nos preparamos", "Florence Scovel"),
     ("Una vida sin examen no merece ser vivida, pues el hombre que no reflexiona sobre sí mismo vive como un extraño en su propia casa", "Sócrates"),
     ("La ignorancia es la semilla de todo mal, porque nadie que conozca verdaderamente el bien elegiría de forma voluntaria el mal", "Platón"),
     ("El comienzo es la parte más importante del trabajo, sobre todo cuando se trata de algo joven y tierno, pues es entonces cuando mejor se moldea y toma la forma que uno quiera imprimirle", "Platón"),
