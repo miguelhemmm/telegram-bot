@@ -68,23 +68,49 @@ gh run watch
 
 ## Day-to-day
 
+Each daily message = countdown headline + a random quote (`src/quotes.py`) + a random
+spoiler-free GTA 6 tip (`src/gta_tips.py`). Edit either list freely; no trailing period on tips.
+
+### Test
+
 ```bash
 cd telegram-gta6-reminder
 
 # this Mac has no system python3.12 -> use uv for tests and Docker for the build
 uv run --python 3.12 --with pytest --no-project pytest -q   # unit tests, no network
 sam validate --lint                                        # template check
-sam build --use-container                                  # builds inside python3.12 arm64 image
 
-# invoke locally (needs Docker). env.json is gitignored.
+# preview today's message in the terminal (nothing is sent)
+uv run --python 3.12 --no-project python -c \
+  "import sys, datetime; sys.path.insert(0, 'src'); import app; print(app.build_message(datetime.date.today()))"
+```
+
+### Send a real message from the terminal (instead of the Lambda console "Test" button)
+
+```bash
+# A) run the handler locally in the Lambda image (needs Docker). Sends to Telegram.
+#    env.json is gitignored.
 cat > env.json <<'JSON'
 { "ReminderFunction": { "TELEGRAM_TOKEN": "...", "CHAT_ID": "..." } }
 JSON
-sam local invoke ReminderFunction --env-vars env.json
+sam build --use-container                                  # builds inside python3.12 arm64 image
+sam local invoke ReminderFunction --env-vars env.json -e events/schedule.json
 
-# invoke the deployed function right now
+# B) invoke the DEPLOYED function right now (same as the console "Test" button)
+sam remote invoke ReminderFunction --stack-name telegram-gta6-reminder
+# or
 aws lambda invoke --function-name telegram-gta6-reminder out.json && cat out.json
 ```
+
+`events/schedule.json` is a sample EventBridge scheduled event (from
+`sam local generate-event cloudwatch scheduled-event`). The handler ignores the event, so
+`--no-event` works too. Rebuild (`sam build`) after code changes before `sam local invoke`;
+option B runs whatever was last deployed.
+
+### Deploy
+
+Normal path: push to `main` touching `telegram-gta6-reminder/**`. GitHub Actions runs pytest,
+then `sam build` + `sam deploy`. Watch it with `gh run watch`. Then check it with option B above.
 
 ### Change the schedule
 

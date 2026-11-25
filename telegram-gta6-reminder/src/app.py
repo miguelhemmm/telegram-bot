@@ -6,11 +6,14 @@ Configuration comes from environment variables:
   CHAT_ID         - target chat/group id
 """
 
+import html
 import json
 import os
 import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
+
+from gta_tips import random_tip
 from quotes import random_quote
 
 RELEASE_DATE = date(2026, 11, 19)
@@ -21,7 +24,10 @@ MX_TZ = timezone(timedelta(hours=-6), name="America/Mexico_City")
 
 
 def build_message(today: date) -> str:
-    """Countdown headline for a given date + a random quote (quotes.py)."""
+    """Countdown headline for a given date + a random quote + a random GTA 6 tip.
+
+    Quote and tip are HTML-escaped because the message is sent with parse_mode=HTML.
+    """
     days_left = (RELEASE_DATE - today).days
 
     if days_left > 1:
@@ -30,10 +36,14 @@ def build_message(today: date) -> str:
         headline = "🎮 ¡Falta 1 día para GTA 6! 🚔🔥"
     elif days_left == 0:
         headline = "🎮🎉 ¡HOY SALE GTA 6! 🚔🔥💥"
+    elif days_left == -1:
+        headline = "🎮 GTA 6 salió ayer. ¿Ya lo jugaste? 🚔"
     else:
         headline = f"🎮 GTA 6 salió hace {abs(days_left)} días. ¿Ya lo jugaste? 🚔"
 
-    return f"{headline}\n\n{random_quote()}"
+    quote = html.escape(random_quote(), quote=False)
+    tip = html.escape(random_tip(), quote=False)
+    return f"{headline}\n\n{quote}\n\n{tip}"
 
 
 def _require_env(name: str) -> str:

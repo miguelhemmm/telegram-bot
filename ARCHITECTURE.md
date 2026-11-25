@@ -76,6 +76,8 @@ Two independent loops share the picture:
 | `telegram-gta6-reminder/samconfig.toml`          | Default flags for the SAM CLI (stack name, region, artifact bucket). Keeps the workflow command short. Contains no secrets.                            |
 | `telegram-gta6-reminder/src/app.py`              | Lambda handler. Builds the countdown message and calls the Telegram API.                                                                               |
 | `telegram-gta6-reminder/src/quotes.py`           | Quote list and `random_quote()` helper appended to each message.                                                                                       |
+| `telegram-gta6-reminder/src/gta_tips.py`         | Spoiler-free GTA 6 tip list and `random_tip()` helper appended to each message.                                                                       |
+| `telegram-gta6-reminder/events/schedule.json`    | Sample EventBridge scheduled event for `sam local invoke -e`.                                                                                          |
 | `telegram-gta6-reminder/tests/test_app.py`       | pytest unit tests. Pure logic only, no network.                                                                                                        |
 | `infra/github-oidc.yaml`                         | One-time bootstrap CloudFormation template: OIDC identity provider + the IAM role GitHub Actions assumes. Deployed manually once, not by the pipeline. |
 | `.github/workflows/deploy-telegram-reminder.yml` | The CI/CD pipeline.                                                                                                                                    |
